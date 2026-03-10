@@ -1,0 +1,23 @@
+
+--- NEW SESSION: 26/10/2023 17:37:21 ---
+/cubito/FiberReinforcementNode/MechanicalObject.showColor = 1 1 1 1
+
+--- NEW SESSION: 26/10/2023 18:06:15 ---
+/cubito/FiberReinforcementNode/Mesh.drawEdges = 1
+
+--- NEW SESSION: 02/11/2023 16:35:39 ---
+/cubito/FEM.drawHeterogeneousTetra = 0
+/cubito/FEM.showVonMisesStressPerNode = 1
+/cubito/FEM.showVonMisesStressPerElement = 1
+/cubito/FEM.drawHeterogeneousTetra = 0
+/cubito/FEM.showVonMisesStressPerNode = 1
+/cubito/FEM.showVonMisesStressPerElement = 1
+/cubito/FEM.drawHeterogeneousTetra = 0
+/cubito/FEM.showVonMisesStressPerNode = 1
+/cubito/FEM.showVonMisesStressPerElement = 1
+
+--- NEW SESSION: 17/11/2023 15:00:32 ---
+/cubito/FEM2.drawHeterogeneousTetra = 1
+
+--- NEW SESSION: 22/11/2023 12:02:01 ---
+/cubito/FiberReinforcementNode/MechanicalObject.showColor = 1 1 1 1

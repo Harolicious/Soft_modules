@@ -1,0 +1,16 @@
+
+--- NEW SESSION: 27/08/2024 19:27:08 ---
+/CubitoShear/cavity/cavity.showColor = 1 1 1 1
+/CubitoShear/modelSubTopo1/TetrahedronFEMForceField.youngModulus = 10
+/CubitoShear/modelSubTopo1/TetrahedronFEMForceField.youngModulus = 10
+/CubitoShear/modelSubTopo1/TetrahedronFEMForceField.youngModulus = 10
+/CubitoShear.time = 1.46
+
+--- NEW SESSION: 28/08/2024 16:50:17 ---
+/CubitoShear/modelSubTopo1/TetrahedronFEMForceField.youngModulus = 9994.77
+/CubitoShear/modelSubTopo1/TetrahedronFEMForceField.youngModulus = 9994.77
+/CubitoShear/modelSubTopo1/TetrahedronFEMForceField.youngModulus = 9994.77
+
+--- NEW SESSION: 10/02/2026 18:06:45 ---
+/CubitoShear/modelSubTopo1/FEM_main.youngModulus = 5483.52
+/CubitoShear/modelSubTopo1/FEM_main.youngModulus = 4620.03

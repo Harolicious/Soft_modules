@@ -1,0 +1,26 @@
+
+--- NEW SESSION: 30/08/2024 18:48:24 ---
+//camera.listening = 0
+//camera.orientation = 0 0 0 0
+//camera.lookAt = 0 0 0
+//camera.fieldOfView = 0
+//camera.zNear = 0.866025
+//camera.zFar = 30.0526
+//camera.computeZClip = 0
+//camera.projectionType = Orthographic
+//camera.activated = 0
+//camera.fixedLookAt = 1
+//camera.projectionType = Perspective
+
+--- NEW SESSION: 30/08/2024 18:48:52 ---
+//camera.projectionType = Perspective
+//camera.projectionType = Perspective
+
+--- NEW SESSION: 30/08/2024 18:51:43 ---
+//OglSceneFrame.style = CubeCones
+//OglSceneFrame.style = Cylinders
+//OglSceneFrame.style = CubeCones
+//OglSceneFrame.viewportSize = 160
+//OglSceneFrame.style = Arrows
+//OglSceneFrame.alignment = TopRight
+//OglSceneFrame.listening = 1
