@@ -29,9 +29,9 @@ mate_desp = np.array(mate_desp)
 # ==========================
 # SIMULACIÓN YMA
 # ==========================
-df_sim = pd.read_csv('end_effector_data_Estirar_YMA.csv')
+df_sim = pd.read_csv('end_effector_data_Estirar_Hyper_YMA.csv')
 
-Pressure_sim = df_sim['Pressure'].values / 6.89
+Pressure_sim = df_sim['Pressure'].values #kPa
 y1 = df_sim['P1_Position_Y'].values   # Z
 z2 = df_sim['P2_Position_Z'].values   # X
 
@@ -75,12 +75,14 @@ def estadisticas(pruebas):
 # ==========================
 df_opt.iloc[:, 6] *= 1000   # Z
 df_opt.iloc[:, 5] *= 1000   # X
+df_ard.iloc[:, 1] *= 6.89   # kPa
 
 tamanos = [2476] * 10
 
 # Deseada (Z)
 opt_Z = dividir_y_extraer_columna(df_opt, tamanos, 6)[1:9]
 ard_Z = dividir_y_extraer_columna(df_ard, tamanos, 1)[1:9]
+
 
 # No deseada (X)
 opt_X = dividir_y_extraer_columna(df_opt, tamanos, 5)[1:9]
@@ -152,11 +154,10 @@ plt.fill_between(pZ_p, mZ_p-seZ_p, mZ_p+seZ_p, color='b', alpha=0.3)
 plt.plot(pZ_d, mZ_d, 'r', label='Experimental Deflated')
 plt.fill_between(pZ_d, mZ_d-seZ_d, mZ_d+seZ_d, color='r', alpha=0.3)
 
-plt.plot(mate_PSI, mate_desp, 'k', lw=2, label='FEM Mooney-Rivlin')
 plt.plot(P_up, Z_up, 'k--', lw=2, label='Simulation YMA Inflated')
 plt.plot(P_down, Z_down, 'k:', lw=2, label='Simulation YMA Deflated')
 
-plt.xlabel('Pressure (PSI)')
+plt.xlabel('Pressure (kPa)')
 plt.ylabel('Displacement Z (mm)')
 plt.title('Desired Deformation (Z)')
 plt.grid(True)
@@ -177,7 +178,7 @@ plt.fill_between(pX_d, mX_d-seX_d, mX_d+seX_d, color='r', alpha=0.3)
 plt.plot(P_up, X_up, 'k--', lw=2, label='Simulation YMA Inflated')
 plt.plot(P_down, X_down, 'k:', lw=2, label='Simulation YMA Deflated')
 
-plt.xlabel('Pressure (PSI)')
+plt.xlabel('Pressure (kPa)')
 plt.ylabel('Displacement X (mm)')
 plt.title('Undesired Deformation (X)')
 plt.grid(True)

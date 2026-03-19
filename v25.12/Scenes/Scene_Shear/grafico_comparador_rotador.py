@@ -124,6 +124,9 @@ Pressure_PSI = df_sofa['Pressure'].values / 6.89
 z_sofa = df_sofa['Position_Y'].values
 x_sofa = df_sofa['Position_X'].values
 
+z_sofa = df_sofa['Position_Y'].to_numpy().copy()
+x_sofa = df_sofa['Position_X'].to_numpy().copy()
+
 z_sofa -= z_sofa[0]
 x_sofa -= x_sofa[0]
 
@@ -147,6 +150,7 @@ plt.plot(P_up_m, Z_up_m, color='blue', label='Exp Z Inflated')
 plt.fill_between(P_up_m, Z_up_m-Z_up_e, Z_up_m+Z_up_e, alpha=0.3)
 
 plt.plot(P_down_m, Z_down_m, color='red', label='Exp Z Deflated')
+plt.fill_between(P_down_m, Z_down_m-Z_down_e, Z_down_m+Z_down_e, alpha=0.3)
 
 plt.plot(P_sofa_up, z_up_sofa, '--k', label='SOFA Z Inflated')
 plt.plot(P_sofa_down, z_down_sofa, ':k', label='SOFA Z Deflated')
@@ -169,6 +173,7 @@ plt.plot(P_up_m, X_up_m, color='blue', label='Exp X Inflated')
 plt.fill_between(P_up_m, X_up_m-X_up_e, X_up_m+X_up_e, alpha=0.3)
 
 plt.plot(P_down_m, X_down_m, color='red', label='Exp X Deflated')
+plt.fill_between(P_down_m, X_down_m-X_down_e, X_down_m+X_down_e, alpha=0.3)
 
 plt.plot(P_sofa_up, x_up_sofa, '--k', label='SOFA X Inflated')
 plt.plot(P_sofa_down, x_down_sofa, ':k', label='SOFA X Deflated')

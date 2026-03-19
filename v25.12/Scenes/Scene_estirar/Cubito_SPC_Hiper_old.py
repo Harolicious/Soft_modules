@@ -13,7 +13,7 @@ import csv
 import numpy as np
 
 LadoCubo = Constants.LadoCubo
-PSI = 6.7
+PSI = 7
 
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
@@ -38,7 +38,7 @@ class Controller(Sofa.Core.Controller):
         self.EndEffectorMO2 = kwargs['EndEffectorMO2']       
         
         # Definir ruta de archivo csv 
-        self.csv_file_path = "end_effector_data_Estirar_YMA.csv"
+        self.csv_file_path = "end_effector_data_Estirar_hyper.csv"
 
         # Crear archivo CSV y escribir encabezados si no existe
         if not os.path.exists(self.csv_file_path):
@@ -148,43 +148,51 @@ def createScene(rootNode):
                 )
                 # rootNode.addObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields showInteractionForceFields hideWireframe')
                 rootNode.addObject('RequiredPlugin', name='Sofa.Component.Topology.Mapping') # Needed to use components [Tetra2TriangleTopologicalMapping]
+                rootNode.addObject('RequiredPlugin', name='Sofa.Component.Topology.Container.Grid')
+                rootNode.addObject('RequiredPlugin', name='Sofa.Component.Constraint.Projective') # Needed to use components [FixedConstraint]  
+                rootNode.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.FEM.HyperElastic') # Needed to use components [TetrahedronHyperelasticityFEMForceField]
                 rootNode.addObject('FreeMotionAnimationLoop')
                 rootNode.addObject('GenericConstraintSolver', maxIterations=100, tolerance = 0.0000001)
-                rootNode.dt = 0.01
+                rootNode.dt = 0.001
 
 		#cubito
+                     
                 cubito = rootNode.addChild('cubito')
-                cubito.addObject('EulerImplicitSolver', name='odesolver')
-                
+                cubito.addObject('EulerImplicitSolver', name="cg_odesolver", printLog="false")
                 cubito.addObject('SparseLDLSolver', name='preconditioner')
-
-                cubito.addObject('ShewchukPCGLinearSolver', iterations=15, name='linearsolver', tolerance=1e-5, preconditioner='@preconditioner', use_precond=True, update_step=1)
-
+                cubito.addObject('CGLinearSolver', iterations="25", name="linear solver", tolerance="1.0e-9", threshold="1.0e-9")
                 Loader = cubito.addObject('MeshVTKLoader', name='loader', filename='CubitoEstirar.vtk')
-                Container = cubito.addObject('TetrahedronSetTopologyContainer',name='container')
+                Container = cubito.addObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
                 cubito.addObject('TetrahedronSetTopologyModifier')
-                cubito.addObject('TetrahedronSetTopologyContainer', src='@loader')
-
                 MO = cubito.addObject('MechanicalObject', name='tetras', template='Vec3', showIndices=False)
                 cubito.addObject('UniformMass', totalMass=0.5)
-                
-                boxROIStiffness = cubito.addObject('BoxROI', name='boxROIStiffness', box=[-13, 18.5, -13,  13, 20.5, 13], drawBoxes=False, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+                              
+                boxROIStiffness = cubito.addObject('BoxROI', name='boxROIStiffness', box=[-13, 18.5, -13,  13, 20.5, 13], drawBoxes=1, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
                 Container.init()
                 MO.init()
                 boxROIStiffness.init()
-                YM1 = 11186
+                YM1 = 148500
                 YM2 = YM1*100
-                YMArray = np.ones(len(Loader.tetras))*YM1
+                YMArray = np.zeros(len(Loader.tetras))
                 IdxElementsInROI = np.array(boxROIStiffness.tetrahedronIndices.value)
-                YMArray[IdxElementsInROI] = YM2
-                print(f"len IdxElementsInROI: {len(IdxElementsInROI)}")
+                YMArray[IdxElementsInROI] = 15000000
+                cubito.addObject('TetrahedronFEMForceField', template='Vec3', name='FEM', method='large', poissonRatio=0.49,  youngModulus = YMArray.flatten().tolist(), initialPoints=IdxElementsInROI)
                 
-                print(f"Largo de YMArray:{len(YMArray)}")
-                cubito.addObject('TetrahedronFEMForceField', template='Vec3', name='FEM', method='large', poissonRatio=0.45,  youngModulus=YMArray.flatten().tolist())
+                boxROICubito = cubito.addObject('BoxROI', name='boxROICubito', box=[-13, 1.5, -13,  13, 20.5, 13], drawBoxes=1, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+                boxROICubito.init()
+                IdxElementsInROICubito = np.array(boxROICubito.tetrahedronIndices.value)
+                # cubito.addObject('TetrahedronHyperelasticityFEMForceField', name="FEMhyper", ParameterSet="8900 80000 1", materialName="MooneyRivlin") #C01, C10, k0 --- 0.008 0.00089
+                cubito.addObject('TetrahedronHyperelasticityFEMForceField', name="FEM", ParameterSet="34480.2759 310340.483", materialName="NeoHookean")
+                # cubito.addObject('TetrahedronHyperelasticityFEMForceField', name="FEM", ParameterSet="34480.2759 310340.483", materialName="StVenantKirchhoff")
+                # cubito.addObject('TetrahedronHyperelasticityFEMForceField', name="FEM", ParameterSet="34480.2759 310340.483", materialName="ArrudaBoyce")
+                # cubito.addObject('TetrahedronHyperelasticityFEMForceField', name="FEM", ParameterSet="55000 1241 3.034", materialName="Ogden") # k u a -----  k = 55 kPa , u = 1.241 kPa , a = 3.034
 
-                cubito.addObject('BoxROI', name='boxROI', box=[-13, -0.5, -13,  13, 1.5, 13], drawBoxes=False, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+
+
+                cubito.addObject('BoxROI', name='boxROI', box=[-13, -0.5, -13,  13, 1.5, 13], drawBoxes=1, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
                 cubito.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e12)
                 cubito.addObject('GenericConstraintCorrection', linearSolver='@preconditioner')
+                
                 
         # Punto "End-effector"
                 

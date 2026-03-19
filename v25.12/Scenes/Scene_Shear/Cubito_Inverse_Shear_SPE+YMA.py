@@ -35,7 +35,6 @@ def createScene(rootNode):
                     Sofa.Component.LinearSolver.Direct
                     Sofa.Component.LinearSolver.Iterative
                     Sofa.Component.Mapping.Linear
-                    Sofa.Component.Mapping.MappedMatrix
                     Sofa.Component.Mapping.NonLinear
                     Sofa.Component.Mass
                     Sofa.Component.ODESolver.Backward
@@ -45,11 +44,12 @@ def createScene(rootNode):
                     Sofa.Component.StateContainer
                     Sofa.Component.Topology.Container.Constant
                     Sofa.Component.Topology.Container.Dynamic
-                    Sofa.Component.Visual
+                    Sofa.Component.Visual          
                     Sofa.Component.Topology.Mapping
                     Sofa.Component.Collision.Geometry
                     Sofa.GL.Component.Rendering3D
-                    Sofa.GL.Component.Shader"""
+                    Sofa.GL.Component.Shader
+                    MultiThreading"""
                 )
                 
                 rootNode.addObject(
@@ -62,25 +62,31 @@ def createScene(rootNode):
                         showForceFields
                         showInteractionForceFields""",
                 )
+                
+                
+                rootNode.addObject('InteractiveCamera',name='cam', position=[0,0,1], projectionType=1)
+                
                 rootNode.addObject('FreeMotionAnimationLoop')
-                rootNode.addObject("QPInverseProblemSolver", printLog=1, epsilon=0.1, maxIterations=1000,tolerance=1e-5)
+                rootNode.addObject('BlockGaussSeidelConstraintSolver', maxIterations=100, tolerance=1e-7)
                 rootNode.dt = 0.01
 
 		#cubito
                 cubito = rootNode.addChild('CubitoShear')
                 cubito.addObject('EulerImplicitSolver', name='odesolver')
+                cubito.addObject('MatrixLinearSystem')
                 cubito.addObject('SparseLDLSolver', name='preconditioner', template='CompressedRowSparseMatrixMat3x3d')
-                cubito.addObject('ShewchukPCGLinearSolver', iterations=15, name='linearsolver', tolerance=1e-5, preconditioner='@preconditioner', use_precond=True, update_step=1)
+                cubito.addObject('PCGLinearSolver', iterations=50, name='linearsolver', tolerance=1e-5, preconditioner='@preconditioner')
 
-                Loader = cubito.addObject('MeshVTKLoader', name='loader', filename='CubitoShear.vtk')
-                Container = cubito.addObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
+                loader = cubito.addObject('MeshVTKLoader', name='loader', filename='CubitoShear.vtk')
+                Container = cubito.addObject('TetrahedronSetTopologyContainer', position='@loader.position', tetrahedra='@loader.tetrahedra', name='container')
                 cubito.addObject('TetrahedronSetTopologyModifier')
-
+                cubito.addObject('TetrahedronSetGeometryAlgorithms')
+                
                 MO = cubito.addObject('MechanicalObject', name='tetras', template='Vec3', showIndices=False)
                 cubito.addObject('UniformMass', totalMass=0.5)
                 
-                boxROIStiffness = cubito.addObject('BoxROI', name='boxROIStiffness', box=[-14, 20.5, -14,  14, 24, 14], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
-                boxROIMain = cubito.addObject('BoxROI', name='boxROIMain', box=[-13, -2, -13,  13, 22, 13], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+                boxROIStiffness = cubito.addObject('BoxROI', name='boxROIStiffness', box=[-14, 18, -14,  14, 21, 14], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+                boxROIMain = cubito.addObject('BoxROI', name='boxROIMain', box=[-13, 1, -13,  13, 19, 13], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
              
                 Container.init()
                 MO.init()
@@ -90,23 +96,24 @@ def createScene(rootNode):
                 YM_base  = 10000     #5419.85
                 YM_stiffROI = 4000 * 100
                 
-                boxROI = cubito.addObject('BoxROI', name='boxROI', box=[-14, 0, -14,  14, 2, 14], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+                boxROI = cubito.addObject('BoxROI', name='boxROI', box=[-14, -1, -14,  14, 2, 14], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
                 cubito.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e12)
                 cubito.addObject('GenericConstraintCorrection', linearSolver='@preconditioner')     
                 
                 modelStiff = cubito.addChild('modelStiff')
-                modelStiff.addObject('TetrahedronSetTopologyContainer', position='@../loader.position', tetrahedra="@../boxROIStiffness.tetrahedraInROI", name='container')
-                modelStiff.addObject('TetrahedronFEMForceField', template = 'Vec3d', name='FEM_stiff', method='large', poissonRatio=0.45, youngModulus=YM_stiffROI) 
+                modelStiff.addObject('TetrahedronSetTopologyContainer', position='@../tetras.position', tetrahedra="@../boxROIStiffness.tetrahedraInROI", name='container')
+                modelStiff.addObject('ParallelTetrahedronFEMForceField', template = 'Vec3d', name='FEM_stiff', method='large', poissonRatio=0.45, youngModulus=YM_stiffROI) 
                 
                 modelSubTopo1 = cubito.addChild('modelSubTopo1')
-                modelSubTopo1.addObject('TetrahedronSetTopologyContainer', position='@../loader.position', tetrahedra="@../boxROIMain.tetrahedraInROI", name='container')
-                modelSubTopo1.addObject('TetrahedronFEMForceField', template='Vec3d',  name='FEM_main', method='large', poissonRatio=0.45, youngModulus=YM_base)
+                modelSubTopo1.addObject('TetrahedronSetTopologyContainer', position='@../tetras.position', tetrahedra="@../boxROIMain.tetrahedraInROI", name='container')
+                modelSubTopo1.addObject('ParallelTetrahedronFEMForceField', template='Vec3d',  name='FEM_main', method='large', poissonRatio=0.45, youngModulus=YM_base)
+
                 modelSubTopo1.addObject('YoungModulusActuator', template='Vec3d', name='YMActuator', maxYoungVariationRatio=0.1, minYoung=10, maxYoung=YM_base)  
 
                 
         #cubito/fibers
 
-                Radius = Constants.RadioCilindro
+                Radius = Constants.RadioCilindro_s
                 
                 ring_density = 16          # nodos por anillo
                 diameter_density = 8       # fibras diametrales en tapas
@@ -213,7 +220,7 @@ def createScene(rootNode):
                     create_ring(points=PointsBody, edges=EdgesBody, center=cube_center,radius=Radius,
                                 y=y, density=ring_density, R=R)
                 
-                FiberBody.addObject("Mesh", position=PointsBody, edges=EdgesBody)
+                FiberBody.addObject("MeshTopology", position=PointsBody, edges=EdgesBody)
                 FiberBody.addObject("MechanicalObject", showObject=True, showObjectScale=10)
                 FiberBody.addObject("MeshSpringForceField",linesStiffness=stiffness_ring)
                 FiberBody.addObject("BarycentricMapping")
@@ -227,7 +234,7 @@ def createScene(rootNode):
                 create_ring_with_diameters(points=PointsB, edges=EdgesB, center=cube_center,radius=Radius,
                                            y=y_start-2, ring_density=ring_density,diameter_density=diameter_density, R=R)
                 
-                CapBottom.addObject("Mesh", position=PointsB, edges=EdgesB)
+                CapBottom.addObject("MeshTopology", position=PointsB, edges=EdgesB)
                 CapBottom.addObject("MechanicalObject", showObject=True, showObjectScale=10)
                 CapBottom.addObject("MeshSpringForceField", linesStiffness=stiffness_diameter)
                 CapBottom.addObject("BarycentricMapping")
@@ -240,7 +247,7 @@ def createScene(rootNode):
                 create_ring_with_diameters(points=PointsT,edges=EdgesT,center=cube_center,radius=Radius,
                                            y=y_end+2, ring_density=ring_density, diameter_density=diameter_density,R=R)
                 
-                CapTop.addObject("Mesh", position=PointsT, edges=EdgesT)
+                CapTop.addObject("MeshTopology", position=PointsT, edges=EdgesT)
                 CapTop.addObject("MechanicalObject", showObject=True, showObjectScale=10)
                 CapTop.addObject("MeshSpringForceField",linesStiffness=stiffness_diameter)
                 CapTop.addObject("BarycentricMapping")
@@ -265,7 +272,7 @@ def createScene(rootNode):
         # Punto "End-effector"         
                 effector = cubito.addChild('EffectorNode')
                 effector.addObject('MechanicalObject', position=[0, LadoCubo, 0], showObject=True, showObjectScale=10)
-                PositionEffector = effector.addObject('PositionEffector', indices=0, effectorGoal=goal.goalMO.position.linkpath)
+                effector.addObject('PositionEffector', indices=0, effectorGoal=goal.goalMO.position.linkpath)
                 effector.addObject('BarycentricMapping', mapForces=False, mapMasses=False)
 
 		#cubito/cubitoVisu

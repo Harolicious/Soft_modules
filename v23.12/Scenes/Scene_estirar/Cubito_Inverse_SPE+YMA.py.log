@@ -187,3 +187,6 @@ Constraint ID : 4  dof ID : 615  value : 0 0 0.384767    dof ID : 617  value : 0
 
 --- NEW SESSION: 30/01/2026 15:52:27 ---
 /cubito/modelSubTopo1/FEM_main.youngModulus = 11186
+
+--- NEW SESSION: 19/03/2026 17:38:59 ---
+/cubito/tetras.showColor = 1 1 1 1
