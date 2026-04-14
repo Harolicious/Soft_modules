@@ -155,14 +155,14 @@ def createScene(rootNode):
                 rootNode.addObject('RequiredPlugin', name='Sofa.Component.Topology.Mapping') # Needed to use components [Tetra2TriangleTopologicalMapping]
                 rootNode.addObject('FreeMotionAnimationLoop')
                 # rootNode.addObject('GenericConstraintSolver', maxIterations=100, tolerance = 0.0000001)
-                rootNode.addObject('BlockGaussSeidelConstraintSolver', maxIterations=100, tolerance=1e-7)
+                rootNode.addObject('BlockGaussSeidelConstraintSolver', maxIterations=50, tolerance=1e-7)
                 rootNode.dt = 0.01
 
 		#cubito
                 cubito = rootNode.addChild('cubito')
-                cubito.addObject('EulerImplicitSolver', name='odesolver')
+                cubito.addObject('EulerImplicitSolver', name='odesolver', rayleighStiffness=0.1, rayleighMass=0.1)
                 cubito.addObject('SparseLDLSolver', name='preconditioner', template='CompressedRowSparseMatrixMat3x3d')
-                cubito.addObject('PCGLinearSolver', iterations=50, name='linearsolver', tolerance=1e-5, preconditioner='@preconditioner')
+                cubito.addObject('PCGLinearSolver', iterations=100, name='linearsolver', tolerance=1e-6, preconditioner='@preconditioner')
                 
                 loader = cubito.addObject('MeshVTKLoader', name='loader', filename='CubitoEstirar.vtk')
                 Container = cubito.addObject('TetrahedronSetTopologyContainer', position='@loader.position', tetrahedra='@loader.tetrahedra', name='container')
@@ -179,18 +179,18 @@ def createScene(rootNode):
                 boxROIStiffness.init()
                 boxROIMain.init()
                 
-                YM_main = 14186 #11186
-                YM_stiffROI = YM_main*100
+                # YM_main = 14186 #11186
+                # YM_stiffROI = YM_main*100
+                mu1 = 6500       # Pa
+                alpha1 = 2.0
+                mu2 = 4500
+                alpha2 = 5.5
+                K = 8e5          # incomprensibilidad
 
-                E_main = YM_main
-                nu_main = 0.45            
-                mu_main = E_main / (2 * (1 + nu_main))
-                lam_main = (E_main * nu_main) / ((1 + nu_main) * (1 - 2 * nu_main))
+                # región rígida
+                mu1_stiff = mu1 * 50
+                alpha1_stiff = alpha1
 
-                E_stiff = YM_stiffROI
-                nu_stiff = 0.45            
-                mu_stiff = E_stiff / (2 * (1 + nu_stiff))
-                lam_stiff = (E_stiff * nu_stiff) / ((1 + nu_stiff) * (1 - 2 * nu_stiff))
 
                 boxROI = cubito.addObject('BoxROI', name='boxROI', box=[-14,  -1, -14,  14, 2, 14], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
                 cubito.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e12)
@@ -198,11 +198,11 @@ def createScene(rootNode):
                 
                 modelStiff = cubito.addChild('modelStiff')
                 modelStiff.addObject('TetrahedronSetTopologyContainer', position='@../loader.position', tetrahedra="@../boxROIStiffness.tetrahedraInROI", name='container')
-                modelStiff.addObject('TetrahedronHyperelasticityFEMForceField', template = 'Vec3d', name='HyperelasticFEM_stiff', materialName='NeoHookean', ParameterSet=[mu_stiff,lam_stiff])
+                modelStiff.addObject('TetrahedronHyperelasticityFEMForceField', template = 'Vec3d', name='HyperelasticFEM_stiff', materialName='Ogden', ParameterSet=[mu1_stiff, alpha1_stiff, K])
                 
                 modelSubTopo1 = cubito.addChild('modelSubTopo1')
                 modelSubTopo1.addObject('TetrahedronSetTopologyContainer', position='@../loader.position', tetrahedra="@../boxROIMain.tetrahedraInROI", name='container')
-                modelSubTopo1.addObject('TetrahedronHyperelasticityFEMForceField', template='Vec3d', name='HyperelasticFEM_main', materialName='NeoHookean', ParameterSet=[mu_main,lam_main])
+                modelSubTopo1.addObject('TetrahedronHyperelasticityFEMForceField', template='Vec3d', name='HyperelasticFEM_main', materialName='Ogden', ParameterSet=[mu1, alpha1, mu2, alpha2, K])
 
                 
         # Punto "End-effector"

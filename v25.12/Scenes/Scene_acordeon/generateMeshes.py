@@ -27,11 +27,11 @@ DimTagCylinder = (3, CylinderTag)
 
 Cutout = gmsh.model.occ.cut([DimTagBox], [DimTagCylinder])
 
-meshembed(LadoCubo, 1, 0.01, BoxTag)
+meshembed(LadoCubo, 0.25, 0.01, BoxTag)
 
 gmsh.model.occ.synchronize()
 
-defineMeshSizes(2.5)
+defineMeshSizes(2)
 gmsh.model.mesh.generate(3)
 gmsh.write("Cubitoacordeon.vtk")
 gmsh.fltk.run()

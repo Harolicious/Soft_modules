@@ -118,11 +118,11 @@ Angle_down_e = savgol_filter(Angle_down_e, win, poly)
 # =====================================================
 # CARGA DATOS SOFA
 # =====================================================
-df_sofa = pd.read_csv('end_effector_data_Acordeon_YMA.csv')
+df_sofa = pd.read_csv('end_effector_data_Acordeon_YMA_mid.csv')
 
 Pressure_PSI = df_sofa['Pressure'].values / 6.89
-z_sofa = df_sofa['Position_Y'].values
-angle = df_sofa['Angle'].values
+z_sofa = df_sofa['Position_Y'].values.copy()
+angle = df_sofa['Angle'].values.copy()
 
 z_sofa -= z_sofa[0]
 angle -= angle[0]
