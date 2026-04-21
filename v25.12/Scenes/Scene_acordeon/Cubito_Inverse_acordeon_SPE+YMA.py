@@ -203,7 +203,7 @@ def createScene(rootNode):
                 cavity.addObject('MeshSTLLoader', name='loader', filename='Cubitoacordeon_Cavity.stl')
                 cavity.addObject('MeshTopology', src='@loader', name='topo')
                 cavity.addObject('MechanicalObject', name='cavity')
-                cavity.addObject('SurfacePressureEquality', triangles='@topo.triangles', eqPressure=6.89 * PSI) #38000 Pa or 5.5 PSI
+                cavity.addObject('SurfacePressureEquality', triangles='@topo.triangles', eqPressure=6.89 * PSI) 
                 cavity.addObject('BarycentricMapping', name='mapping',  mapForces=True, mapMasses=True)
                 
                   
@@ -211,7 +211,7 @@ def createScene(rootNode):
                 goal = rootNode.addChild('goal')
                 goal.addObject('EulerImplicitSolver', firstOrder=True)
                 goal.addObject('CGLinearSolver', iterations=100, tolerance=1e-5, threshold=1e-5)
-                goal.addObject('MechanicalObject', name='goalMO', position=[2, LadoCubo+Displa , 0], showObject=True, showObjectScale=15)
+                goal.addObject('MechanicalObject', name='goalMO', position=[1.5, LadoCubo+Displa , 0], showObject=True, showObjectScale=15)
                 goal.addObject('SphereCollisionModel', radius=2.5, group=1)
 
                 

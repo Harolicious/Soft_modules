@@ -179,8 +179,7 @@ def createScene(rootNode):
                 boxROIStiffness.init()
                 boxROIMain.init()
                 
-                # YM_main = 14186 #11186
-                # YM_stiffROI = YM_main*100
+              
                 mu1 = 6500       # Pa
                 alpha1 = 2.0
                 mu2 = 4500

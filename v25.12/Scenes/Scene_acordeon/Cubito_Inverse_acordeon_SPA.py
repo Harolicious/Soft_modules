@@ -264,7 +264,7 @@ def createScene(rootNode):
                         if i<=Density4-2:
                             Edges4.append([i*Repeat4+j,i*Repeat4+Repeat4+j])
                             
-                FiberNode.addObject("Mesh", position=Points4, name="Mesh", edges=Edges4)
+                FiberNode.addObject("MeshTopology", position=Points4, name="Mesh", edges=Edges4)
                 FiberNode.addObject("MechanicalObject", showObject=True, showObjectScale=10)                
                 FiberNode.addObject("MeshSpringForceField", linesStiffness=1e9)
                 FiberNode.addObject("BarycentricMapping")

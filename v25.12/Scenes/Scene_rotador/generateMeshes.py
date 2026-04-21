@@ -26,7 +26,7 @@ DimTagCylinder = (3, CylinderTag)
 
 Cutout = gmsh.model.occ.cut([DimTagBox], [DimTagCylinder])
 
-meshembed(LadoCubo, 1, 0.01, BoxTag)
+meshembed(LadoCubo, 0.25, 0.01, BoxTag)
 
 gmsh.model.occ.synchronize()
 

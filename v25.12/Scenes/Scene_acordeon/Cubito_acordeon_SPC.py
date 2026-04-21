@@ -188,7 +188,7 @@ def createScene(rootNode):
                 boxROIStiffness.init()
                 boxROIMain.init()
                 
-                YM_base = 6020 #11030
+                YM_base = 6770 #11030
                 YM_stiffROI = 9000 * 100
                 
                 boxROI = cubito.addObject('BoxROI', name='boxROI', box=[-12,  -0.25, -12,  12, 0.25, 12], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")

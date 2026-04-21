@@ -11,9 +11,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
-# =====================================================
-# CARGA DE DATOS EXPERIMENTALES
-# =====================================================
 df_opt = pd.read_csv('rotate_datos_opt2.csv')
 df_ard = pd.read_csv('rotate_datos_ard.csv')
 
@@ -26,15 +23,10 @@ mate_desp = mate.iloc[:, 4].values
 df_opt.iloc[:, 6] *= 1000  # Z
 df_opt.iloc[:, 5] *= 1000  # X
 
-# =====================================================
-# PARÁMETROS
-# =====================================================
+
 tamanos_opt = [2476] * 10
 tamanos_ard = [2476] * 10
 
-# =====================================================
-# FUNCIONES
-# =====================================================
 def dividir_y_extraer_columna(df, tamanos, indice):
     pruebas = []
     inicio = 0
@@ -53,16 +45,12 @@ def calcular_estadisticas(pruebas):
     se = np.std(data, axis=0) / np.sqrt(data.shape[0])
     return mean, se
 
-# =====================================================
-# EXTRACCIÓN DE PRUEBAS
-# =====================================================
+
 pruebas_opt_Z = dividir_y_extraer_columna(df_opt, tamanos_opt, 6)[3:10]
 pruebas_opt_Angle = dividir_y_extraer_columna(df_opt, tamanos_opt, 3)[3:10]
 pruebas_ard = dividir_y_extraer_columna(df_ard, tamanos_ard, 1)[3:10]
 
-# =====================================================
-# PRESURIZADO / DESPRESURIZADO
-# =====================================================
+
 def separar(pruebas):
     up, down = [], []
     for p in pruebas:
@@ -75,9 +63,7 @@ optZ_up, optZ_down = separar(pruebas_opt_Z)
 opt_Angle_up, opt_Angle_down = separar(pruebas_opt_Angle)
 ard_up, ard_down = separar(pruebas_ard)
 
-# =====================================================
-# PROMEDIOS Y ERRORES
-# =====================================================
+
 Z_up_m, Z_up_e = calcular_estadisticas(optZ_up)
 Z_down_m, Z_down_e = calcular_estadisticas(optZ_down)
 
@@ -96,9 +82,7 @@ Z_down_m += Z_up_m[-1] - Z_down_m[0]
 Angle_down_m += Angle_up_m[-1] - Angle_down_m[0]
 P_down_m += P_up_m[-1] - P_down_m[0]
 
-# =====================================================
-# SUAVIZADO
-# =====================================================
+
 win = 17
 poly = 1
 
@@ -115,14 +99,12 @@ Z_down_e = savgol_filter(Z_down_e, win, poly)
 Angle_up_e = savgol_filter(Angle_up_e, win, poly)
 Angle_down_e = savgol_filter(Angle_down_e, win, poly)
 
-# =====================================================
-# CARGA DATOS SOFA
-# =====================================================
-df_sofa = pd.read_csv('end_effector_data_Rotador_YMA.csv')
+
+df_sofa = pd.read_csv('end_effector_data_Rotador_YMA_mid.csv')
 
 Pressure_PSI = df_sofa['Pressure'].values / 6.89
-z_sofa = df_sofa['Position_Y'].values
-angle = df_sofa['Angle'].values
+z_sofa = df_sofa['Position_Y'].values.copy()
+angle = df_sofa['Angle'].values.copy()
 
 z_sofa -= z_sofa[0]
 angle -= angle[0]
@@ -138,9 +120,6 @@ z_down_sofa = z_sofa[mid:]
 angle_up_sofa = -angle[:mid]
 angle_down_sofa = -angle[mid:]
 
-# =====================================================
-# GRAFICO Z (EXP vs SOFA)
-# =====================================================
 plt.figure(figsize=(10,6))
 
 plt.plot(P_up_m, Z_up_m, color='blue', label='Exp Z Inflated')
@@ -160,9 +139,6 @@ plt.grid(True)
 plt.savefig('Z_Exp_vs_SOFA_biaxial.pdf', dpi=300, bbox_inches='tight')
 plt.show()
 
-# =====================================================
-# GRAFICO X (EXP vs SOFA vs FEM MR)
-# =====================================================
 plt.figure(figsize=(10,6))
 
 plt.plot(P_up_m, Angle_up_m, color='blue', label='Exp X Inflated')

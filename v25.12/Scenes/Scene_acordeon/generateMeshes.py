@@ -42,7 +42,7 @@ CylinderTag = gmsh.model.occ.addCylinder(0, (LadoCubo-AlturaCilindro)/2,0, 0, Al
 DimTagCylinder = (3, CylinderTag)
 
 gmsh.model.occ.synchronize()
-defineMeshSizes(2)
+defineMeshSizes(1.5)
 gmsh.model.mesh.generate(2)
 gmsh.model.mesh.refine()
 gmsh.write("Cubitoacordeon_Cavity.stl")

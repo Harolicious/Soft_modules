@@ -1,111 +1,110 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Apr 24 15:39:45 2024
-
-@author: lab_Harold
-"""
-
-# import Sofa
-import Sofa.Core
-import Constants
+import Sofa
 import os
 import csv
+import Constants
 import numpy as np
-
-LadoCubo = Constants.LadoCubo
-PSI = 3.5
-
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
+
+LadoCubo = Constants.LadoCubo
+
+PSI = 5
 
 class Controller(Sofa.Core.Controller):   
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print(" Python::__init__::" + str(self.name.value))
-        
-        # Bandera para controlar la animacion
-        self.animation_finished = False 
-        
-        # Inicializar atributos con valores de kwargs
+
         self.RootNode = kwargs['RootNode']
-        self.SPC = kwargs['SPC']
-        self.Maxpressure = 6.89 * PSI # PSI to KPa
-        self.Increment = self.Maxpressure/500 #KPa
-        self.Pressure = 0        
-        self.Decreasing = False
+        self.SPA = kwargs['SPA']
+        self.FEM_main = kwargs['FEM_main']  # 👈 NUEVO
+        
         self.EndEffectorMO = kwargs['EndEffectorMO']
         self.EndEffectorMO2 = kwargs['EndEffectorMO2']       
-        
-        # Definir ruta de archivo csv 
-        self.csv_file_path = "end_effector_data_Estirar_YMA.csv"
 
-        # Crear archivo CSV y escribir encabezados si no existe
+        self.Maxpressure = 6890 * PSI   # ✔ Pa
+        self.Increment = self.Maxpressure / 500
+        self.Pressure = 0        
+        self.Decreasing = False
+
+        self.YM_values = [10000, 9000, 8000, 7000]
+        self.current_YM_index = 0
+
+        self.disp_max_list = []
+        self.current_disp_max = 0
+
+        self.initial_pos = self.EndEffectorMO.position.value[0].copy()
+
+        self.FEM_main.youngModulus.value = self.YM_values[0]
+        print(f"YM inicial: {self.YM_values[0]}")
+
+        # CSV
+        self.csv_file_path = "YM_vs_disp.csv"
         if not os.path.exists(self.csv_file_path):
             with open(self.csv_file_path, mode='w', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerow(["Time", "Pressure","P1_Position_X", "P1_Position_Y" ,"P1_Position_Z","P2_Position_X", "P2_Position_Y" ,"P2_Position_Z"])
-        
-        print('Finished Init')
-        
-    def save_end_effector_data(self, time):
-        position = self.EndEffectorMO.position.value
-        position2 = self.EndEffectorMO2.position.value
-                
-        try:
-            with open(self.csv_file_path, mode='a', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow([time,self.Pressure,position[0][0],position[0][1],position[0][2],position2[0][0],position2[0][1],position2[0][2]])
-        except Exception as e:
-            print(f"Error al escribir en archivo csv:{e}")
-            
-    def update_pressure_increase(self, pressure, spc):
-        pressure += self.Increment
-        if pressure > self.Maxpressure and self.animation_finished==False:
-            pressure = self.Maxpressure
-        spc.value.value = [pressure]
-        return pressure
+                writer.writerow(["YM", "Max_Displacement"])
 
-    def update_pressure_decrease(self, pressure, spc):
-        pressure -= self.Increment
-        if pressure < 0 and not self.animation_finished:
-            pressure = 0
-        spc.value.value = [pressure]
-        return pressure
+    def update_pressure_increase(self):
+        self.Pressure += self.Increment
+        if self.Pressure > self.Maxpressure:
+            self.Pressure = self.Maxpressure
+        self.SPA.value = [self.Pressure]
 
-        
-    def onAnimateBeginEvent(self, eventType):
-        # print(f"Current End-Effector position: {self.EndEffectorMO.position.value}")        
-        # print(f"pressure: {self.Pressure}")
-    
-        # Aquí obtienes el tiempo actual de la simulación
-        current_time = self.RootNode.time.value
-        
-        # Imprimir mensaje si la animación ha terminado
-        if self.animation_finished:
-            # print("animación terminada")
-            self.RootNode.dt = 0 
+    def update_pressure_decrease(self):
+        self.Pressure -= self.Increment
+        if self.Pressure < 0:
             self.Pressure = 0
-            return
+        self.SPA.value = [self.Pressure]
 
-        # Guardar datos del EndEffector
-        self.save_end_effector_data(current_time)
+
+    def onAnimateBeginEvent(self, eventType):
+
+        pos = self.EndEffectorMO.position.value[0]
+        disp = pos[1] - self.initial_pos[1]
+
+        if disp > self.current_disp_max:
+            self.current_disp_max = disp
 
         if not self.Decreasing:
-            # Incrementar presiones
-            self.Pressure = self.update_pressure_increase(self.Pressure, self.SPC)
-            
+            self.update_pressure_increase()
             if self.Pressure >= self.Maxpressure:
-                self.Decreasing = True  
+                self.Decreasing = True
         else:
-            # Decrementar presiones
-            self.Pressure = self.update_pressure_decrease(self.Pressure, self.SPC)
-            
-            if self.Pressure <= 0:
-                self.Decreasing = False  
-                self.animation_finished = True
+            self.update_pressure_decrease()
 
-  
+            if self.Pressure <= 0:
+
+                # Guardar resultado
+                YM_actual = self.YM_values[self.current_YM_index]
+                self.disp_max_list.append(self.current_disp_max)
+
+                print(f"YM: {YM_actual} -> Disp max: {self.current_disp_max}")
+
+                with open(self.csv_file_path, mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow([YM_actual, self.current_disp_max])
+
+                # Reset
+                self.current_disp_max = 0
+                self.Decreasing = False
+                self.Pressure = 0
+
+                # Siguiente YM
+                self.current_YM_index += 1
+
+                if self.current_YM_index >= len(self.YM_values):
+                    print("Simulación completa")
+                    print(self.disp_max_list)
+                    self.RootNode.animate = False
+                    return
+
+                # Cambiar YM
+                new_YM = self.YM_values[self.current_YM_index]
+                self.FEM_main.youngModulus.value = new_YM
+
+                print(f"Cambiando a YM: {new_YM}")
+
 def createScene(rootNode):
 
                 rootNode.addObject(
@@ -121,6 +120,7 @@ def createScene(rootNode):
                     Sofa.Component.LinearSolver.Direct
                     Sofa.Component.LinearSolver.Iterative
                     Sofa.Component.Mapping.Linear
+                    Sofa.Component.Mapping.MappedMatrix
                     Sofa.Component.Mapping.NonLinear
                     Sofa.Component.Mass
                     Sofa.Component.ODESolver.Backward
@@ -130,9 +130,9 @@ def createScene(rootNode):
                     Sofa.Component.StateContainer
                     Sofa.Component.Topology.Container.Constant
                     Sofa.Component.Topology.Container.Dynamic
-                    Sofa.Component.Visual          
-                    Sofa.Component.Topology.Mapping
+                    Sofa.Component.Visual
                     Sofa.Component.Collision.Geometry
+                    Sofa.Component.Topology.Mapping
                     Sofa.GL.Component.Rendering3D
                     Sofa.GL.Component.Shader
                     MultiThreading"""
@@ -148,20 +148,19 @@ def createScene(rootNode):
                         showForceFields
                         showInteractionForceFields""",
                 )
-                
+                # rootNode.addObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields showInteractionForceFields hideWireframe')
+             
                 rootNode.addObject('InteractiveCamera',name='cam', position=[0,0,1], projectionType=1)
-                
-                rootNode.addObject('RequiredPlugin', name='Sofa.Component.Topology.Mapping') # Needed to use components [Tetra2TriangleTopologicalMapping]
                 rootNode.addObject('FreeMotionAnimationLoop')
-                rootNode.addObject('BlockGaussSeidelConstraintSolver', maxIterations=100, tolerance=1e-7)
+                rootNode.addObject("QPInverseProblemSolver", printLog=1, epsilon=0.1, maxIterations=100, tolerance = 0.0000001)
                 rootNode.dt = 0.01
-
-		#cubito
+                
+        #cubito
                 cubito = rootNode.addChild('cubito')
                 cubito.addObject('EulerImplicitSolver', name='odesolver')
                 cubito.addObject('SparseLDLSolver', name='preconditioner', template='CompressedRowSparseMatrixMat3x3d')
                 cubito.addObject('PCGLinearSolver', iterations=50, name='linearsolver', tolerance=1e-5, preconditioner='@preconditioner')
-                
+
                 loader = cubito.addObject('MeshVTKLoader', name='loader', filename='CubitoEstirar.vtk')
                 Container = cubito.addObject('TetrahedronSetTopologyContainer', position='@loader.position', tetrahedra='@loader.tetrahedra', name='container')
                 cubito.addObject('TetrahedronSetTopologyModifier')
@@ -190,21 +189,8 @@ def createScene(rootNode):
                 
                 modelSubTopo1 = cubito.addChild('modelSubTopo1')
                 modelSubTopo1.addObject('TetrahedronSetTopologyContainer', position='@../loader.position', tetrahedra="@../boxROIMain.tetrahedraInROI", name='container')
-                modelSubTopo1.addObject('ParallelTetrahedronFEMForceField', template='Vec3d',  name='FEM_main', method='large', poissonRatio=0.49, youngModulus=YM_base)
+                FEM_main = modelSubTopo1.addObject('ParallelTetrahedronFEMForceField', template='Vec3d',  name='FEM_main', method='large', poissonRatio=0.49, youngModulus=YM_base)
 
-                
-        # Punto "End-effector"
-                
-                EndEffectorNode = cubito.addChild("EndEffectorNode")
-                EndEffectorMO = EndEffectorNode.addObject("MechanicalObject", position=[[0,LadoCubo,0]], showObject=True, showObjectScale=10)
-                EndEffectorNode.addObject("BarycentricMapping")
-                
-        # Punto "End-effector"
-                
-                EndEffectorNode2 = cubito.addChild("EndEffectorNode_2")
-                EndEffectorMO2 = EndEffectorNode2.addObject("MechanicalObject", position=[[0,LadoCubo/2,LadoCubo/2]], showObject=True, showObjectScale=10)
-                EndEffectorNode2.addObject("BarycentricMapping")
-                
 
         #cubito/fibers
         
@@ -223,24 +209,44 @@ def createScene(rootNode):
                         Points.append(Coords)
                         if j>=1:
                             Edges.append([i*Density+j-1,i*Density+j])
-                            if j==Density-1:
+                            if j==29:
                                 Edges.append([i*Density+j, i*Density+j-Density+1])
-                
+                                
+                                
+                            
                 FiberNode.addObject("MeshTopology", position=Points, name="Mesh", edges=Edges)
                 FiberNode.addObject("MechanicalObject", showObject=True, showObjectScale=10)                
                 FiberNode.addObject("MeshSpringForceField", linesStiffness=1e9)
                 FiberNode.addObject("BarycentricMapping")
-                
                 
 		#cubito/cavity
                 cavity = cubito.addChild('cavity')
                 cavity.addObject('MeshSTLLoader', name='loader', filename='CubitoEstirar_Cavity.stl')
                 cavity.addObject('MeshTopology', src='@loader', name='topo')
                 cavity.addObject('MechanicalObject', name='cavity')
-                SPC = cavity.addObject('SurfacePressureConstraint', triangles='@topo.triangles', value=0, valueType=0)
+                SPA = cavity.addObject('SurfacePressureActuator', triangles='@topo.triangles')
                 #cavity.addObject('BarycentricMapping', name='mapping',  mapForces=True, mapMasses=False)
                 cavity.addObject('BarycentricMapping', name='mapping',  mapForces=True, mapMasses=True)
-
+                
+        # Effector
+        # bunny/effector
+        # goal
+                goal = rootNode.addChild('goal')
+                goal.addObject('EulerImplicitSolver', firstOrder=True)
+                goal.addObject('CGLinearSolver', iterations=100, tolerance=1e-5, threshold=1e-5)
+                goal.addObject('MechanicalObject', name='goalMO', position=[0, 22, 0], showObject=True, showObjectScale=15)
+                goal.addObject('SphereCollisionModel', radius=2.5, group=1)
+                goal.addObject('UncoupledConstraintCorrection')
+                
+         # Punto "End-effector"
+                 
+                EndEffectorNode = cubito.addChild("EndEffectorNode")
+                EndEffectorMO = EndEffectorNode.addObject("MechanicalObject", position=[[0,LadoCubo,0]], showObject=True, showObjectScale=10)
+                EndEffectorNode.addObject("BarycentricMapping")
+                
+                EndEffectorNode2 = cubito.addChild("EndEffectorNode_2")
+                EndEffectorMO2 = EndEffectorNode2.addObject("MechanicalObject", position=[[0,LadoCubo/2,LadoCubo/2]], showObject=True, showObjectScale=10)
+                EndEffectorNode2.addObject("BarycentricMapping")
 
 		#cubito/cubitoVisu
                 cubitoVisu = cubito.addChild('visu')
@@ -248,6 +254,6 @@ def createScene(rootNode):
                 cubitoVisu.addObject("OglModel", src="@loader")
                 cubitoVisu.addObject("BarycentricMapping")
                 
-                rootNode.addObject(Controller(name="ActuationController", RootNode=rootNode, SPC=SPC,  EndEffectorMO=EndEffectorMO, EndEffectorMO2=EndEffectorMO2 ))
+                rootNode.addObject(Controller(name="ActuationController", RootNode=rootNode, SPA=SPA, EndEffectorMO=EndEffectorMO , EndEffectorMO2=EndEffectorMO2, FEM_main=FEM_main))
                 
                 return rootNode

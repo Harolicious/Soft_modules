@@ -1,4 +1,3 @@
-
 import Sofa.Core
 import Constants
 
@@ -7,8 +6,8 @@ import numpy as np
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
 LadoCubo = Constants.LadoCubo
-PSI = 7.4
-Displa = 3.4
+PSI = 5
+Displa = 2.3
 
 def createScene(rootNode):
 
@@ -36,6 +35,7 @@ def createScene(rootNode):
                     Sofa.Component.Topology.Container.Constant
                     Sofa.Component.Topology.Container.Dynamic
                     Sofa.Component.Visual
+                    MultiThreading
                     Sofa.Component.Topology.Mapping
                     Sofa.Component.Collision.Geometry
                     Sofa.GL.Component.Rendering3D
@@ -53,8 +53,9 @@ def createScene(rootNode):
                         showInteractionForceFields""",
                 )
                 # rootNode.addObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields showInteractionForceFields hideWireframe')
-                rootNode.addObject('FreeMotionAnimationLoop')
-                rootNode.addObject("QPInverseProblemSolver", printLog=1, epsilon=0.1, maxIterations=100,tolerance=0.0000001)
+                rootNode.addObject('FreeMotionAnimationLoop')                
+                rootNode.addObject('InteractiveCamera',name="cam",position=[1,0,0], projectionType=1) 
+                rootNode.addObject("QPInverseProblemSolver", printLog=1, epsilon=0.1, maxIterations=1000,tolerance=1e-5)
                 rootNode.dt = 0.01
 
         #cubito
@@ -64,56 +65,53 @@ def createScene(rootNode):
                 cubito.addObject('ShewchukPCGLinearSolver', iterations=15, name='linearsolver', tolerance=1e-5, preconditioner='@preconditioner', use_precond=True, update_step=1)
 
                 Loader = cubito.addObject('MeshVTKLoader', name='loader', filename='Cubitobarril.vtk')
-                Container = cubito.addObject('TetrahedronSetTopologyContainer', src='@loader', name='container' , edges=False)
+                Container = cubito.addObject('TetrahedronSetTopologyContainer', src='@loader', name='container', createTriangleArray=True)
                 cubito.addObject('TetrahedronSetTopologyModifier')
 
-                MO = cubito.addObject('MechanicalObject', name='tetras', template='Vec3d', showIndices=False)
+                MO = cubito.addObject('MechanicalObject', name='tetras', template='Vec3', showIndices=False)
                 cubito.addObject('UniformMass', totalMass=0.5)
                 
-                boxROIStiffness = cubito.addObject('BoxROI', name='boxROIStiffness', box=[-14, 17, -14,  14, 22, 14], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
-                boxROIMain = cubito.addObject('BoxROI', name='boxROIMain', box=[-13, 0.5, -13,  13, 19.5, 13], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
-                
+                boxROIStiffness = cubito.addObject('BoxROI', name='boxROIStiffness', box=[-12, 19.75, -12,  12, 20.25, 12], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+                boxROIMain = cubito.addObject('BoxROI', name='boxROIMain', box=[-11, 0.25, -11,  11, 19.75, 11], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+              
                 Container.init()
                 MO.init()
                 boxROIStiffness.init()
                 boxROIMain.init()
 
-                YM_base  = 12000 #14850
-                YM_stiffROI = YM_base*100
+                YM_base  = 20000  # 14850
+                YM_stiffROI = 9000 * 100
                 
-                boxROI = cubito.addObject('BoxROI', name='boxROI', box=[-14,  -2, -14,  14, 3, 14], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
+                boxROI = cubito.addObject('BoxROI', name='boxROI', box=[-12,  -0.25, -12,  12, 0.25, 12], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
                 cubito.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e12)
                 cubito.addObject('GenericConstraintCorrection', linearSolver='@preconditioner')    
                 
                 modelStiff = cubito.addChild('modelStiff')
                 modelStiff.addObject('TetrahedronSetTopologyContainer', position='@../loader.position', tetrahedra="@../boxROIStiffness.tetrahedraInROI", name='container')
-                modelStiff.addObject('TetrahedronFEMForceField', template = 'Vec3d', name='FEM_stiff', method='large', poissonRatio=0.45, youngModulus=YM_stiffROI) 
+                modelStiff.addObject('ParallelTetrahedronFEMForceField', template = 'Vec3d', name='FEM_stiff', method='large', poissonRatio=0.49, youngModulus=YM_stiffROI) 
                 
                 modelSubTopo1 = cubito.addChild('modelSubTopo1')
                 modelSubTopo1.addObject('TetrahedronSetTopologyContainer', position='@../loader.position', tetrahedra="@../boxROIMain.tetrahedraInROI", name='container')
-                modelSubTopo1.addObject('TetrahedronFEMForceField', template='Vec3d',  name='FEM_main', method='large', poissonRatio=0.45, youngModulus=YM_base)
+                modelSubTopo1.addObject('ParallelTetrahedronFEMForceField', template='Vec3d',  name='FEM_main', method='large', poissonRatio=0.49, youngModulus=YM_base)
                 modelSubTopo1.addObject('YoungModulusActuator', template='Vec3d', name='YMActuator', maxYoungVariationRatio=0.1, minYoung=10, maxYoung=YM_base)   
             
         #cubito/fibers
         
                 FiberNode = cubito.addChild("FiberReinforcementNode")  
                 
-                Density = 6              # discretización vertical
-                CapDensity = 6            # discretización SOLO en tapas
+                Density = 6              
+                CapDensity = 6            
                 Radius = Constants.RadioCilindro
-                Repeat = 16             # potencia de 2
                 LevelHeight = Constants.AlturaCilindro
-                
+                Repeat = 16             
+                                
                 Ymin = 2.5
                 Ymax = Ymin + LevelHeight
                 dy = (Ymax - Ymin) / (Density - 1)
                 
                 half = Repeat // 2
                 
-                # avance angular entre fibras vecinas
                 dTheta_fiber = 2 * np.pi / Repeat
-                
-                # 🔥 giro por nivel: fibra j → j+2
                 dTheta_level = (2 * dTheta_fiber) / (Density - 1)
                 
                 Points = []
@@ -190,7 +188,7 @@ def createScene(rootNode):
     
 
                 
-                FiberNode.addObject("Mesh", position=Points, name="Mesh", edges=Edges)
+                FiberNode.addObject("MeshTopology", position=Points, name="Mesh", edges=Edges)
                 FiberNode.addObject("MechanicalObject", showObject=True, showObjectScale=10)                
                 FiberNode.addObject("MeshSpringForceField", linesStiffness=5e5)
                 FiberNode.addObject("BarycentricMapping")
@@ -209,12 +207,12 @@ def createScene(rootNode):
                 goal = rootNode.addChild('goal')
                 goal.addObject('EulerImplicitSolver', firstOrder=True)
                 goal.addObject('CGLinearSolver', iterations=100, tolerance=1e-5, threshold=1e-5)
-                goal.addObject('MechanicalObject', name='goalMO', position=[0, LadoCubo/2, LadoCubo/2 + Displa ], showObject=True, showObjectScale=15)
+                goal.addObject('MechanicalObject', name='goalMO', position=[ LadoCubo/2 + Displa, LadoCubo/2,0], showObject=True, showObjectScale=15)
                 goal.addObject('SphereCollisionModel', radius=2.5, group=1)   
   
         # Punto "End-effector"   
                 effector = cubito.addChild('EffectorNode')
-                effector.addObject('MechanicalObject', position=[0, LadoCubo/2, LadoCubo/2], showObject=True, showObjectScale=10)
+                effector.addObject('MechanicalObject', position=[LadoCubo/2, LadoCubo/2, 0], showObject=True, showObjectScale=10)
                 PositionEffector = effector.addObject('PositionEffector', indices=0, effectorGoal=goal.goalMO.position.linkpath)
                 effector.addObject('BarycentricMapping', mapForces=False, mapMasses=False)
 
