@@ -151,7 +151,6 @@ def createScene(rootNode):
                 
                 rootNode.addObject('InteractiveCamera',name='cam', position=[0,0,1], projectionType=1)
                 
-                rootNode.addObject('RequiredPlugin', name='Sofa.Component.Topology.Mapping') # Needed to use components [Tetra2TriangleTopologicalMapping]
                 rootNode.addObject('FreeMotionAnimationLoop')
                 rootNode.addObject('BlockGaussSeidelConstraintSolver', maxIterations=100, tolerance=1e-7)
                 rootNode.dt = 0.01

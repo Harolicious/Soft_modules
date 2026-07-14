@@ -162,9 +162,7 @@ def createScene(rootNode):
 		#cubito
                 cubito = rootNode.addChild('cubito')
                 cubito.addObject('EulerImplicitSolver', name='odesolver')
-                
                 cubito.addObject('SparseLDLSolver', name='preconditioner')
-
                 cubito.addObject('ShewchukPCGLinearSolver', iterations=15, name='linearsolver', tolerance=1e-5, preconditioner='@preconditioner', use_precond=True, update_step=1)
 
                 Loader = cubito.addObject('MeshVTKLoader', name='loader', filename='Cubitorotador.vtk')
@@ -221,7 +219,7 @@ def createScene(rootNode):
                         if i<=Density-2:
                             Edges.append([i*Repeat+j,i*Repeat+Repeat+j])
                             
-                FiberNode.addObject("Mesh", position=Points, name="Mesh", edges=Edges)
+                FiberNode.addObject("MeshTopology", position=Points, name="Mesh", edges=Edges)
                 FiberNode.addObject("MechanicalObject", showObject=True, showObjectScale=10)                
                 FiberNode.addObject("MeshSpringForceField", linesStiffness=1e8)
                 FiberNode.addObject("BarycentricMapping")
@@ -249,7 +247,7 @@ def createScene(rootNode):
                                     
                     
                 
-                FiberNode.addObject("Mesh", position=Points2, name="Mesh", edges=Edges2)
+                FiberNode.addObject("MeshTopology", position=Points2, name="Mesh", edges=Edges2)
                 FiberNode.addObject("MechanicalObject", showObject=True, showObjectScale=10)                
                 FiberNode.addObject("MeshSpringForceField", linesStiffness=1e9)
                 FiberNode.addObject("BarycentricMapping")
