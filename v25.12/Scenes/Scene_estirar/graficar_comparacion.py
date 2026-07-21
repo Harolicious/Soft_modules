@@ -14,7 +14,7 @@ import os
 import matplotlib.pyplot as plt
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SIM_CSV  = os.path.join(BASE_DIR, "end_effector_data_Estirar_inverso_lista.csv")
+SIM_CSV  = os.path.join(BASE_DIR, "end_effector_data_Estirar_inverso_lista_40.csv")
 EXP_CSV  = os.path.join(BASE_DIR, "presion_desplazamiento_kpa.csv")
 
 
@@ -82,7 +82,7 @@ def main():
     ax3.grid(alpha=0.3)
 
     fig.tight_layout()
-    out_path = os.path.join(BASE_DIR, "comparacion_presion_desplazamiento.png")
+    out_path = os.path.join(BASE_DIR, "comparacion_presion_desplazamiento_40.png")
     fig.savefig(out_path, dpi=150)
     print(f"Gráfico guardado en: {out_path}")
 

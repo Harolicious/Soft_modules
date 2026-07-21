@@ -24,10 +24,7 @@ class Controller(Sofa.Core.Controller):
         self.goal_y0 = 20.0
         self.MaxDesp = 7.67
 
-        # ---- Lista de deformaciones (INPUT) — cargada desde datos experimentales ----
-        # Archivo generado a partir de estirardsm10_c.xlsx (columna E = desplazamiento,
-        # columna presion_kPa = presión experimental correspondiente, ya convertida
-        # de PSI a kPa). Debe estar en la misma carpeta que esta escena.
+      
         datos_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'presion_desplazamiento_kpa.csv')
         self.desp_list         = []
@@ -41,24 +38,17 @@ class Controller(Sofa.Core.Controller):
         self.step_index = 0
         self.GoalDesp   = 0.0
 
-        # ---- Calibración YM(presion) — 20 tramos de 2.5 kPa ----
-        # YM_values interpolado a partir de los 10 valores originales (5 kPa c/u),
-        # ajustando un decaimiento exponencial con asíntota: YM(p) = A*exp(-k*p) + C
-        # (A=22490.0, k=0.08453, C=7520.4, R²=0.997) y evaluándolo en los puntos
-        # medios de los 20 nuevos tramos de 2.5 kPa, preservando la misma forma
-        # de decaimiento que los 10 valores medidos originalmente.
-        self.pressure_ranges = [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25,
-                                 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50]
-        self.YM_values = [32000, 25800, 20600, 17500, 15500, 14200, 13050, 12150,
-                          11300, 10800, 10200, 9800, 9350, 8950, 8600, 8300, 8050,
-                          7800, 7600, 7400]
-        self.SPA_maxPressure_values = [2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25,
-                                        27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50]
+        # YM_values ajustando un decaimiento exponencial con asíntota: 
+        #YM(p) = A*exp(-k*p) + C 
+        # (A=22490.0, k=0.08453, C=7520.4, R²=0.997)
+        
+        self.pressure_ranges        = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+        self.YM_values              = [26000, 19000, 15000, 13000, 11000, 10000, 9250, 8500, 8000, 7500]
+        self.SPA_maxPressure_values = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 
-        # maxPressure inicial — primer tramo
         self.SPA.maxPressure.value = np.float64(self.SPA_maxPressure_values[-1])
 
-        self.csv_file_path = "end_effector_data_Estirar_inverso_lista.csv"
+        self.csv_file_path = "end_effector_data_Estirar_inverso_lista_10.csv"
         if not os.path.exists(self.csv_file_path):
             with open(self.csv_file_path, mode='w', newline='') as file:
                 writer = csv.writer(file)
@@ -117,13 +107,11 @@ class Controller(Sofa.Core.Controller):
                 return
 
     def update_max_pressure(self):
-        # maxPressure sube de forma uniforme con el GoalDesp actual
         p_equiv = (self.GoalDesp / self.MaxDesp) * 50.0
         p_equiv = max(1.0, p_equiv)
         self.SPA.maxPressure.value = np.float64(p_equiv / 10.0)
 
     def move_goal_from_list(self):
-        # Toma el siguiente valor de deformación de la lista y lo aplica al goal
         self.GoalDesp = self.desp_list[self.step_index]
         self.GoalMO.position.value = [[0, self.goal_y0 + self.GoalDesp, 0]]
         self.step_index += 1
@@ -137,7 +125,6 @@ class Controller(Sofa.Core.Controller):
             return
 
         lambda_val   = float(np.array(self.SPA.pressure.value).flat[0])
-        max_p        = float(np.array(self.SPA.maxPressure.value).flat[0])
         p1_y         = float(self.EndEffectorMO.position.value[0][1])
         goal_y       = self.goal_y0 + self.GoalDesp
         p_real       = lambda_val * 10.0
@@ -238,8 +225,8 @@ def createScene(rootNode):
     boxROIStiffness.init()
     boxROIMain.init()
 
-    YM_base     = 32000
-    YM_stiffROI = 32000 * 100
+    YM_base     = 26000
+    YM_stiffROI = 26000 * 100
 
     boxROI = cubito.addObject('BoxROI', name='boxROI', box=[-12, -0.25, -12, 12, 0.25, 12], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
     cubito.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e12)
